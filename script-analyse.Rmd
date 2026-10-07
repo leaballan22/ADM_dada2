@@ -144,9 +144,7 @@ cat("Of those,", sum(match.ref), "were exact matches to the expected reference s
 install.packages("igraph", type = "source")
 BiocManager::install("phyloseq", update = FALSE)
 ```
-```{r}
-library(phyloseq); packageVersion("phyloseq")
-```
+
 ```{r}
 if(!requireNamespace("BiocManager")){
   install.packages("BiocManager")
@@ -156,5 +154,9 @@ BiocManager::install("phyloseq")
 
 ```{r}
 library(phyloseq); packageVersion("phyloseq")
+```
+
+```{r}
+library(Biostrings); packageVersion("Biostrings")
 ```
 
