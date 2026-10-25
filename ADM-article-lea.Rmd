@@ -100,6 +100,83 @@ head(track)
 ```
 
 ```{r}
-
+taxa <- assignTaxonomy(seqtab.nochim, "~/ADM_dada2/silva_nr99_v138.2_toGenus_trainset.fa.gz", multithread=TRUE)
 ```
+
+```{r}
+taxa <- addSpecies(taxa, "~/ADM_dada2/silva_v138.2_assignSpecies.fa.gz")
+```
+
+```{r}
+taxa.print <- taxa # Removing sequence rownames for display only
+rownames(taxa.print) <- NULL
+head(taxa.print)
+```
+
+```{r}
+rownames(seqtab.nochim)
+```
+
+```{r}
+library(phyloseq); packageVersion("phyloseq")
+```
+
+```{r}
+library(Biostrings); packageVersion("Biostrings")
+```
+
+```{r}
+library(ggplot2); packageVersion("ggplot2")
+```
+
+```{r}
+theme_set(theme_bw())
+```
+
+```{r}
+meta <- read.csv("SraRunTable (3).csv", check.names = FALSE)
+
+col_run  <- names(meta)[sapply(meta, function(x) any(grepl("^SRR", x)))][1]
+col_name <- names(meta)[sapply(meta, function(x) any(grepl("^(Arc|Bac)GB", x)))][1]
+col_run
+col_name
+
+nom <- meta[[col_name]][match(trimws(samples.out), trimws(meta[[col_run]]))]
+head(nom)   # doit afficher ArcGB5_16, ArcGB5_15, ...
+```
+
+
+```{r}
+samples.out <- rownames(seqtab.nochim)
+
+# Fichier SRA : on le met dans le même ordre que seqtab.nochim
+meta <- read.csv("~/ADM_dada2/SraRunTable (3).csv")
+nom  <- meta$Sample.Name[match(samples.out, meta$Run)]
+
+samdf <- data.frame(
+  Domain = ifelse(grepl("^Arc", nom), "Archaea", "Bacteria"),
+  Core   = paste0("4573-", sub("^(Arc|Bac)GB([0-9]+)_([0-9]+)$", "\\2", nom)),
+  Depth  = as.integer(sub("^(Arc|Bac)GB([0-9]+)_([0-9]+)$", "\\3", nom))
+)
+
+# Régimes thermiques définis dans l'article
+samdf$Temperature <- "Temperate"                                                    # 4573-5 et surface de 4573-13 (0 à 9 cm)
+samdf$Temperature[samdf$Core == "4573-13" & samdf$Depth > 9] <- "Moderately hot"   # 4573-13 profond (21 à 33 cm)
+samdf$Temperature[samdf$Core %in% c("4573-19", "4573-16")] <- "Extremely hot"
+
+rownames(samdf) <- samples.out
+samdf   # vérifie qu'il n'y a aucun NA
+```
+```{r}
+ps <- phyloseq(otu_table(seqtab.nochim, taxa_are_rows=FALSE),
+               sample_data(samdf),
+               tax_table(taxa))
+
+ps_arch <- subset_samples(ps, Domain == "Archaea")
+ps_bact <- subset_samples(ps, Domain == "Bacteria")
+```
+
+
+
+
 
