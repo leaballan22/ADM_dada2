@@ -100,7 +100,7 @@ head(track)
 ```
 
 ```{r}
-taxa <- assignTaxonomy(seqtab.nochim, "~/ADM_dada2/silva_nr99_v138.2_toGenus_trainset.fa.gz", multithread=TRUE)
+taxa <- assignTaxonomy(seqtab.nochim, "~/ADM_dada2/silva_nr99_v138.2_toGenus_trainset.fa.gz", multithread=TRUE, tryRC=TRUE)
 ```
 
 ```{r}
@@ -134,47 +134,104 @@ theme_set(theme_bw())
 ```
 
 ```{r}
-meta <- read.csv("SraRunTable (3).csv", check.names = FALSE)
 
-col_run  <- names(meta)[sapply(meta, function(x) any(grepl("^SRR", x)))][1]
-col_name <- names(meta)[sapply(meta, function(x) any(grepl("^(Arc|Bac)GB", x)))][1]
-col_run
-col_name
-
-nom <- meta[[col_name]][match(trimws(samples.out), trimws(meta[[col_run]]))]
-head(nom)   # doit afficher ArcGB5_16, ArcGB5_15, ...
+meta <- read.csv("~/ADM_dada2/SraRunTable (3).csv", check.names = FALSE)
+names(meta)
+nom <- meta[["Sample Name"]][match(rownames(seqtab.nochim), meta$Run)]
+head(nom)   # doit afficher "ArcGB5_16" "ArcGB5_15" ...
 ```
 
 
 ```{r}
-samples.out <- rownames(seqtab.nochim)
-
-# Fichier SRA : on le met dans le même ordre que seqtab.nochim
-meta <- read.csv("~/ADM_dada2/SraRunTable (3).csv")
-nom  <- meta$Sample.Name[match(samples.out, meta$Run)]
-
 samdf <- data.frame(
   Domain = ifelse(grepl("^Arc", nom), "Archaea", "Bacteria"),
   Core   = paste0("4573-", sub("^(Arc|Bac)GB([0-9]+)_([0-9]+)$", "\\2", nom)),
   Depth  = as.integer(sub("^(Arc|Bac)GB([0-9]+)_([0-9]+)$", "\\3", nom))
 )
-
-# Régimes thermiques définis dans l'article
-samdf$Temperature <- "Temperate"                                                    # 4573-5 et surface de 4573-13 (0 à 9 cm)
-samdf$Temperature[samdf$Core == "4573-13" & samdf$Depth > 9] <- "Moderately hot"   # 4573-13 profond (21 à 33 cm)
+samdf$Temperature <- "Temperate"
+samdf$Temperature[samdf$Core == "4573-13" & samdf$Depth > 9] <- "Moderately hot"
 samdf$Temperature[samdf$Core %in% c("4573-19", "4573-16")] <- "Extremely hot"
-
 rownames(samdf) <- samples.out
-samdf   # vérifie qu'il n'y a aucun NA
+samdf
 ```
+
+
 ```{r}
+all(rownames(samdf) == rownames(seqtab.nochim))   # doit afficher TRUE
+
 ps <- phyloseq(otu_table(seqtab.nochim, taxa_are_rows=FALSE),
                sample_data(samdf),
                tax_table(taxa))
 
 ps_arch <- subset_samples(ps, Domain == "Archaea")
+ps_arch <- subset_taxa(ps_arch, Kingdom == "Archaea")
+
 ps_bact <- subset_samples(ps, Domain == "Bacteria")
+ps_bact <- subset_taxa(ps_bact, Kingdom == "Bacteria")
 ```
+
+```{r}
+bact_runs <- rownames(samdf)[samdf$Domain == "Bacteria"]
+top_b <- names(sort(colSums(seqtab.nochim[bact_runs, ]), decreasing=TRUE))[1:200]
+
+t2 <- assignTaxonomy(top_b, "~/ADM_dada2/silva_nr99_v138.2_toGenus_trainset.fa.gz", multithread=TRUE, tryRC=TRUE)
+table(t2[, "Kingdom"], useNA="ifany")
+```
+
+
+```{r}
+plot_richness(ps_arch, x="Depth", measures=c("Shannon", "Simpson"), color="Temperature") +
+  ggtitle("Archaea")
+
+```
+
+```{r}
+plot_richness(ps_bact, x="Depth", measures=c("Shannon", "Simpson"), color="Temperature") +
+  ggtitle("Bacteria")
+```
+
+```{r}
+ps.prop.arch <- transform_sample_counts(ps_arch, function(otu) otu/sum(otu))
+ord.nmds.arch <- ordinate(ps.prop.arch, method="NMDS", distance="bray")
+plot_ordination(ps.prop.arch, ord.nmds.arch, color="Temperature", shape="Core", title="Archaea - Bray NMDS")
+```
+
+```{r}
+ps.prop.bact <- transform_sample_counts(ps_bact, function(otu) otu/sum(otu))
+ord.nmds.bact <- ordinate(ps.prop.bact, method="NMDS", distance="bray")
+plot_ordination(ps.prop.bact, ord.nmds.bact, color="Temperature", shape="Core", title="Bacteria - Bray NMDS")
+```
+```{r}
+# Archées
+top20.arch <- names(sort(taxa_sums(ps_arch), decreasing=TRUE))[1:20]
+ps.top20.arch <- transform_sample_counts(ps_arch, function(OTU) OTU/sum(OTU))
+ps.top20.arch <- prune_taxa(top20.arch, ps.top20.arch)
+plot_bar(ps.top20.arch, x="Depth", fill="Family") +
+  facet_wrap(~Temperature, scales="free_x") + ggtitle("Archaea")
+```
+```{r}
+table(tax_table(ps)[, "Kingdom"], useNA = "ifany")
+ntaxa(ps_bact)
+```
+
+```{r}
+top20.bact <- names(sort(taxa_sums(ps_bact), decreasing=TRUE))[1:20]
+ps.top20.bact <- transform_sample_counts(ps_bact, function(OTU) OTU/sum(OTU))
+ps.top20.bact <- prune_taxa(top20.bact, ps.top20.bact)
+plot_bar(ps.top20.bact, x="Depth", fill="Class") +
+  facet_wrap(~Temperature, scales="free_x") + ggtitle("Bacteria")
+```
+
+
+
+
+
+
+
+
+
+
+
 
 
 
