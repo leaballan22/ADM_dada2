@@ -12,11 +12,11 @@ list.files(path)
 ```
 
 ```{r}
-# Forward and reverse fastq filenames have format: SAMPLENAME_R1_001.fastq and SAMPLENAME_R2_001.fastq
-fnFs <- sort(list.files(path, pattern="_1.fastq", full.names = TRUE))
+
+fnFs <- sort(list.files(path, pattern="_1.fastq", full.names = TRUE)) # liste les fichiers forward
 fnRs <- sort(list.files(path, pattern="_2.fastq", full.names = TRUE))
-# Extract sample names, assuming filenames have format: SAMPLENAME_XXX.fastq
-sample.names <- sapply(strsplit(basename(fnFs), "_"), `[`, 1)
+# liste les fichiers reverse 
+sample.names <- sapply(strsplit(basename(fnFs), "_"), `[`, 1)# On recuper le nom de chaque échantillons avant le _
 ```
 
 ```{r}
