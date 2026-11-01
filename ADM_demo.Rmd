@@ -19,65 +19,109 @@ path <- "~/ADM_dada2/MiSeq_SOP" # CHANGE ME to the directory containing the fast
 list.files(path)
 ```
 ```{r}
-# Forward and reverse fastq filenames have format: SAMPLENAME_R1_001.fastq and SAMPLENAME_R2_001.fastq
-fnFs <- sort(list.files(path, pattern="_R1_001.fastq", full.names = TRUE))
-fnRs <- sort(list.files(path, pattern="_R2_001.fastq", full.names = TRUE))
-# Extract sample names, assuming filenames have format: SAMPLENAME_XXX.fastq
-sample.names <- sapply(strsplit(basename(fnFs), "_"), `[`, 1)
+
+fnFs <- sort(list.files(path, pattern="_R1_001.fastq", full.names = TRUE))# liste les fichiers forward
+fnRs <- sort(list.files(path, pattern="_R2_001.fastq", full.names = TRUE)) # liste les fichiers reverse 
+
+sample.names <- sapply(strsplit(basename(fnFs), "_"), `[`, 1) # On recuper le nom de chaque échantillons avant le _.
 ```
 
 ```{r}
+# Graphique de la qualité des premiers fichiers forward, calcule le score de qualité pour chaque position des lectures. Permet de determiner ou couper les brins. 
 plotQualityProfile(fnFs[1:2])
 ```
+Le graphique de qualité montre les deux premier reads forward. Ce sont deux profils qui ont une tres bonne qualité de séquencage puisque la ligne rouge reste stable a 100% le long du cycles, traduissant a une qualité de la longueur de la lecture et quelle ne sont pas couper. 
+Pour la qualité elle reste au alentour de 35 jusqu'aux 200 eme cycles. Puis a partir de 240 eme cycles la qualité ce deterior, expliquer la la fin du read impliquand une degradation de la lecture. Donc il est preferable de couper le brin vers 240 pb.
+
 
 ```{r}
 plotQualityProfile(fnRs[1:2])
 ```
+Ce graphique de qualité est réaliser a partire des premiers sequences en reverse. Les profils ont une qualité inferieur au forward. La qualité est bonne jusqu'au 140 eme cycles ou la qualité de lectures des sequences est dégrader. Cela peut etre expliquer par le retournement des clusters sur la flowcell qui accumule plus rapidement des erreurs et ce degrade plus rapidement. La ligne rouge reste tout le log a 100% puis plonge legerement autour du cycle 250. Il est donc envisagable de couper au alentour du cycle 160. 
+
+
 
 ```{r}
-# Place filtered files in filtered/ subdirectory
+# On construit des chemins des fichers filtrés que la fonction filterAndTrim va créer. Ils vont etre ragés dans un fichier appeler filtered. File.path va assembler le chemin du dossier avec le dossier filtered . paste0 crée le nom du fichier aevc le nom des ecahntillons et le nom _F_filt.fastq.gz
 filtFs <- file.path(path, "filtered", paste0(sample.names, "_F_filt.fastq.gz"))
+
+# C'est la meme choses pour les reverse mais cette fois ci avec le nom_R_filt.fastq.gz  
 filtRs <- file.path(path, "filtered", paste0(sample.names, "_R_filt.fastq.gz"))
-names(filtFs) <- sample.names
-names(filtRs) <- sample.names
+
+names(filtFs) <- sample.names # on replace les element du vecteur par les nouveaux nom des échantillons. 
+names(filtRs) <- sample.names # Pareil pour les reverse.
 ```
 
+Cette commande prepare les chemins ou la fonction filterAndTrim va ajouter les fichiers qui sont nettoyés. 
+
 ```{r}
-out <- filterAndTrim(fnFs, filtFs, fnRs, filtRs, truncLen=c(240,160),
-              maxN=0, maxEE=c(2,2), truncQ=2, rm.phix=TRUE,
-              compress=TRUE, multithread=FALSE) # On Windows set multithread=FALSE (only needed for filterAndTrim)
+# On filtre et coupe les reads reverse et forward, puis cette fonction met les reads dans le chemins préparé par la commande précedante. 
+out <- filterAndTrim(fnFs, filtFs, fnRs, filtRs, truncLen=c(240,160),# trunclen permet de couper les reads a la longueur voulu et determiner par les graphiques de qualité. 
+              maxN=0, maxEE=c(2,2), truncQ=2, rm.phix=TRUE, # maxN permet de rejeter tout les reads avec une base incunnue ( correspond a N) puisque dada2 est pas capable de les gerer dans son modele. rm.phix permet de retirer les reads provenant de phage 
+              compress=TRUE, multithread=FALSE) 
 head(out)
 ```
+Le resulat donne la comparaison entre les reads.in de departs et les reads.out qui sont filtrer. Une perte d'environs 9% est observer correspondant au reads de mauvaise qualité qui on été retirer. 
+
 
 ```{r}
-errF <- learnErrors(filtFs, multithread=TRUE)
+# erreurs de séquenceurs pour les reads forward car le sequenceur fait des erreurs ( comme replacer un A par un C) dada2 doit connaitre la frequence erreur pour ne pas les confondre avec des variants biologiques. estimation du taux erreurs
+errF <- learnErrors(filtFs, multithread=TRUE) 
 ```
+33 514 080 base sont réparties dans 139 642 issus de 20 échantillions qui ont servi a apprendre les erreurs. Don si on divise on obtient 240 bases par read. 
+
 
 ```{r}
 errR <- learnErrors(filtRs, multithread=TRUE)
 ```
+22 342 720 réparties dans les 139 642 reads issus des 20 echantions ont servi a apprendre les erreurs. Donc si on divise on obtient 160 bases par reads. 
+
 
 ```{r}
 plotErrors(errF, nominalQ=TRUE)
+
+# affiche des graphiques des taux erreur appris precedament en fonction du type de substitution par exemple un A replacer par un G. nominalQ=TRUE permet ajouter une ligne rouge sur les graphiques qui montre les erreurs attendu d'apres les score de qualité calculer precedament. 
 ```
+
+Plusieur graphique sont obtenus, representant la frequences erreur en log10 par la concensus du score de qualité. La ligne noir represente le model erreur calculer par DADA2. Les points gris sont les taux erreur observer réalement a partir des données pour chaque des score de qualité. Plus les points sont gros plus il represente beaucoup de bases. La ligne rouge represente le taux théorique par illumina. Les graphique vide represente aucune erreur puisque ce sont des substitution des meme bases. 
+
+Les point gris suivent bien les lignes noirs, donc dada2 a bien pris en compte les erreurs de ce modele. Il est observer dans beaucoup de cases que la fréquence erreur diminue quand qualité augmente. Dans chaque graphique la ligne noir seloigne de la rouge cela est du a une difference entre le taux réel erreur et celui annoncé. Lorsque le score de qualité est élever la ligne noir devient plane, plateau, expliquer par le score elever a tres peu erreur donc le modele ne descend plus. 
+
+
 
 ```{r}
 dadaFs <- dada(filtFs, err=errF, multithread=TRUE)
+
+# permet de corriger les erreurs de séquencage pour le forward et d'en déduire les vrai séquences grace au ASV. Donc les reads identiques sont regroupés, puis avec le modele erreur errF, si une séquences rare ( avec des potentiels erreurs) peut s'expliquer par une erreur de séquencage. Soit si oui alors la séquence est fusionnée aevc elle, ou si alors cest une vraie variante. err=errF presente le model erreur utiliser précedament. 
 ```
+Le resultat pour forward donne le nombres de reads et le nombre de séquences uniques. L'echantillion 20 contient 4314 reads pour 897 séquences uniques. Les échantillons comportants beaucoup de reads on une proportion élever de sequences uniques puisque plus on sequences plus on revoit plusieurs fois les memes séquences. 
+
+
 
 ```{r}
 dadaRs <- dada(filtRs, err=errR, multithread=TRUE)
+# dada2 pour les reverse comme pour les forward
 ```
+Les résultats montrent le meme nombres de reads que le forward mais les le nombres de séquences uniques est diminuer. Cela peut etre expliquer par des sequences plus courte, donc moins de position ou des erreurs peuvent apparaitre.
+
 
 ```{r}
 dadaFs[[1]]
+# Cette ligne permet afficher les résultats de dada2 pour le premier échantillons en forward. 
 ```
 
+Il presente donc 128 sequences variables a partir de 1979 séquences uniques. Donc environ 90% des séquences uniques de départ presente des erreurs de séquencage, determinée grace a dada2. OMEGA_A est le seuil ou une séquences rarae est agrer comme variantes que si la propabbilité que se soit une erreur soit inféreiur a 1e-40, OMEGA_C effectue la meme choses. BAND_SIZE correspond a la largeur de la bande utilisé pour aligement. 
+
 ```{r}
+
+# fusion des reads forward avec reverse pour reconstruire la séquences V4 de ARN 16S. Vérifie le chevauchement des séquences, verbose= TRUE sert a afficher les détail de la fusion.
 mergers <- mergePairs(dadaFs, filtFs, dadaRs, filtRs, verbose=TRUE)
-# Inspect the merger data.frame from the first sample
+
+# Les premier lignes sont afficher 
 head(mergers[[1]])
 ```
+
+
 
 ```{r}
 seqtab <- makeSequenceTable(mergers)
