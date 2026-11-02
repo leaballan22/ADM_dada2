@@ -15,7 +15,7 @@ library(dada2); packageVersion("dada2")
 ```
 
 ```{r}
-path <- "~/ADM_dada2/MiSeq_SOP" # CHANGE ME to the directory containing the fastq files after unzipping.
+path <- "~/ADM_dada2/MiSeq_SOP" 
 list.files(path)
 ```
 ```{r}
@@ -23,78 +23,78 @@ list.files(path)
 fnFs <- sort(list.files(path, pattern="_R1_001.fastq", full.names = TRUE))# liste les fichiers forward
 fnRs <- sort(list.files(path, pattern="_R2_001.fastq", full.names = TRUE)) # liste les fichiers reverse 
 
-sample.names <- sapply(strsplit(basename(fnFs), "_"), `[`, 1) # On recuper le nom de chaque échantillons avant le _.
+sample.names <- sapply(strsplit(basename(fnFs), "_"), `[`, 1) # On récupère le nom de chaque échantillon avant le _.
 ```
 
 ```{r}
-# Graphique de la qualité des premiers fichiers forward, calcule le score de qualité pour chaque position des lectures. Permet de determiner ou couper les brins. 
+# Graphique de la qualité des premiers fichiers forward, calcule le score de qualité pour chaque position des lectures et permet de déterminer ou couper les brins. 
 plotQualityProfile(fnFs[1:2])
 ```
-Le graphique de qualité montre les deux premier reads forward. Ce sont deux profils qui ont une tres bonne qualité de séquencage puisque la ligne rouge reste stable a 100% le long du cycles, traduissant a une qualité de la longueur de la lecture et quelle ne sont pas couper. 
-Pour la qualité elle reste au alentour de 35 jusqu'aux 200 eme cycles. Puis a partir de 240 eme cycles la qualité ce deterior, expliquer la la fin du read impliquand une degradation de la lecture. Donc il est preferable de couper le brin vers 240 pb.
+Le graphique de qualité montre les deux premiers reads forward. Ce sont deux profils qui ont une très bonne qualité de séquencage puisque la ligne rouge reste stable à 100% le long des cycles, ce qui montre que tous les reads ont la meme longueur et qu'ils n'ont pas été coupés. Pour la qualité elle reste aux alentours de 35 jusqu'au 200e cycle. Puis à partir de 240e cycle la qualité se détériore, expliqué par la fin du read impliquant une dégradation de la lecture. Donc il est préférable de couper le brin vers 240 pb.
 
 
 ```{r}
 plotQualityProfile(fnRs[1:2])
 ```
-Ce graphique de qualité est réaliser a partire des premiers sequences en reverse. Les profils ont une qualité inferieur au forward. La qualité est bonne jusqu'au 140 eme cycles ou la qualité de lectures des sequences est dégrader. Cela peut etre expliquer par le retournement des clusters sur la flowcell qui accumule plus rapidement des erreurs et ce degrade plus rapidement. La ligne rouge reste tout le log a 100% puis plonge legerement autour du cycle 250. Il est donc envisagable de couper au alentour du cycle 160. 
+Ce graphique de qualité est réalisé à partir des premières séquences en reverse. Les profils ont une qualité inférieure au forward. La qualité est bonne jusqu'au 140e cycle ou la qualité de lecture des séquences est dégradée. Cela peut s'expliquer par le retournement des clusters sur la flowcell qui accumule plus d'erreurs et donc la qualité se dégrade plus rapidement. La ligne rouge reste tout le long à 100% puis plonge légèrement autour du cycle 250. Il est donc envisageable de couper aux alentours du cycle 160.  
 
 
 
 ```{r}
-# On construit des chemins des fichers filtrés que la fonction filterAndTrim va créer. Ils vont etre ragés dans un fichier appeler filtered. File.path va assembler le chemin du dossier avec le dossier filtered . paste0 crée le nom du fichier aevc le nom des ecahntillons et le nom _F_filt.fastq.gz
+# On construit les chemins des fichiers filtrés que la fonction filterAndTrim va créer. Ils vont etre rangés dans un dossier appelé filtered. file.path va assembler le chemin du dossier avec le dossier filtered . paste0 crée le nom du fichier avec le nom des échantillons et le nom _F_filt.fastq.gz
 filtFs <- file.path(path, "filtered", paste0(sample.names, "_F_filt.fastq.gz"))
 
-# C'est la meme choses pour les reverse mais cette fois ci avec le nom_R_filt.fastq.gz  
+# C'est la meme chose pour les reverse mais cette fois ci avec le nom_R_filt.fastq.gz  
 filtRs <- file.path(path, "filtered", paste0(sample.names, "_R_filt.fastq.gz"))
 
-names(filtFs) <- sample.names # on replace les element du vecteur par les nouveaux nom des échantillons. 
+names(filtFs) <- sample.names # Replace les elements du vecteur par les nouveaux noms des échantillons. 
 names(filtRs) <- sample.names # Pareil pour les reverse.
 ```
 
-Cette commande prepare les chemins ou la fonction filterAndTrim va ajouter les fichiers qui sont nettoyés. 
+Cette commande prépare les chemins ou la fonction filterAndTrim va ajouter les fichiers qui sont nettoyés. 
 
 ```{r}
-# On filtre et coupe les reads reverse et forward, puis cette fonction met les reads dans le chemins préparé par la commande précedante. 
-out <- filterAndTrim(fnFs, filtFs, fnRs, filtRs, truncLen=c(240,160),# trunclen permet de couper les reads a la longueur voulu et determiner par les graphiques de qualité. 
-              maxN=0, maxEE=c(2,2), truncQ=2, rm.phix=TRUE, # maxN permet de rejeter tout les reads avec une base incunnue ( correspond a N) puisque dada2 est pas capable de les gerer dans son modele. rm.phix permet de retirer les reads provenant de phage 
+# On filtre et coupe les reads reverse et forward, puis cette fonction met les reads dans les chemins préparés par la commande précédente. 
+
+out <- filterAndTrim(fnFs, filtFs, fnRs, filtRs, truncLen=c(240,160),# truncLen permet de couper les reads à la longueur voulue et determinée par les graphiques de qualité. 
+              maxN=0, maxEE=c(2,2), truncQ=2, rm.phix=TRUE, # maxN permet de rejeter tous les reads avec une base inconnue (correspond a N) puisque dada2 n'est pas capable de les gérer dans son modèle. rm.phix permet de retirer les reads provenant du phage.
               compress=TRUE, multithread=FALSE) 
 head(out)
 ```
-Le resulat donne la comparaison entre les reads.in de departs et les reads.out qui sont filtrer. Une perte d'environs 9% est observer correspondant au reads de mauvaise qualité qui on été retirer. 
+Le résultat donne la comparaison entre les reads.in de départ et les reads.out qui sont filtrés. Une perte d'environ 9% est observée correspondant aux reads de mauvaise qualité qui ont été retirés. 
 
 
 ```{r}
-# erreurs de séquenceurs pour les reads forward car le sequenceur fait des erreurs ( comme replacer un A par un C) dada2 doit connaitre la frequence erreur pour ne pas les confondre avec des variants biologiques. estimation du taux erreurs
+# Erreurs de séquenceur pour les reads forward car le séquenceur fait des erreurs (comme remplacer un A par un C), dada2 doit connaitre la fréquence d'erreur pour ne pas les confondre avec des variants biologiques. Estimation du taux d'erreur.
 errF <- learnErrors(filtFs, multithread=TRUE) 
 ```
-33 514 080 base sont réparties dans 139 642 issus de 20 échantillions qui ont servi a apprendre les erreurs. Don si on divise on obtient 240 bases par read. 
+33 514 080 bases sont réparties dans 139 642 reads issus de 20 échantillons qui ont servi à apprendre les erreurs. Donc si on divise on obtient 240 bases par read. 
 
 
 ```{r}
 errR <- learnErrors(filtRs, multithread=TRUE)
 ```
-22 342 720 réparties dans les 139 642 reads issus des 20 echantions ont servi a apprendre les erreurs. Donc si on divise on obtient 160 bases par reads. 
+22 342 720 bases sont réparties dans les 139 642 reads issus des 20 échantillons qui ont servi à apprendre les erreurs. Donc si on divise on obtient 160 bases par read. 
 
 
 ```{r}
 plotErrors(errF, nominalQ=TRUE)
 
-# affiche des graphiques des taux erreur appris precedament en fonction du type de substitution par exemple un A replacer par un G. nominalQ=TRUE permet ajouter une ligne rouge sur les graphiques qui montre les erreurs attendu d'apres les score de qualité calculer precedament. 
+# Affiche les graphiques des taux d'erreur appris précédemment en fonction du type de substitution par exemple un A remplacé par un G. nominalQ=TRUE permet d'ajouter une ligne rouge sur les graphiques qui montre les erreurs attendues d'apres les scores de qualité calculés précédemment. 
 ```
 
-Plusieur graphique sont obtenus, representant la frequences erreur en log10 par la concensus du score de qualité. La ligne noir represente le model erreur calculer par DADA2. Les points gris sont les taux erreur observer réalement a partir des données pour chaque des score de qualité. Plus les points sont gros plus il represente beaucoup de bases. La ligne rouge represente le taux théorique par illumina. Les graphique vide represente aucune erreur puisque ce sont des substitution des meme bases. 
+Plusieurs graphiques sont obtenus représentant la fréquence d'erreur en log10 par le concensus du score de qualité. La ligne noire représente le modele d'erreur calculé par DADA2. Les points gris sont les taux d'erreur observés réellement à partir des données pour chacun des scores de qualité. Plus les points sont gros plus il représente beaucoup de bases. La ligne rouge représente le taux théorique d'Illumina. Les graphiques vides représentent aucune erreur puisque ce sont des substitutions des memes bases. 
 
-Les point gris suivent bien les lignes noirs, donc dada2 a bien pris en compte les erreurs de ce modele. Il est observer dans beaucoup de cases que la fréquence erreur diminue quand qualité augmente. Dans chaque graphique la ligne noir seloigne de la rouge cela est du a une difference entre le taux réel erreur et celui annoncé. Lorsque le score de qualité est élever la ligne noir devient plane, plateau, expliquer par le score elever a tres peu erreur donc le modele ne descend plus. 
+Les points gris suivent bien la ligne noire, donc dada2 a bien pris en compte les erreurs de ce modele. De plus, on observe dans beaucoup de cases, la fréquence d'erreur diminue quand la qualité augmente. Dans chaque graphique la ligne noire s'éloigne de la ligne rouge cela est du à une difference entre le taux réel d'erreur et celui annoncé. Lorsque le score de qualité est élevé la ligne noire devient plane, plateau, ce qui s'explique par un score élever à tres peu d'erreurs donc le modele ne descend plus.  
 
 
 
 ```{r}
 dadaFs <- dada(filtFs, err=errF, multithread=TRUE)
 
-# permet de corriger les erreurs de séquencage pour le forward et d'en déduire les vrai séquences grace au ASV. Donc les reads identiques sont regroupés, puis avec le modele erreur errF, si une séquences rare ( avec des potentiels erreurs) peut s'expliquer par une erreur de séquencage. Soit si oui alors la séquence est fusionnée aevc elle, ou si alors cest une vraie variante. err=errF presente le model erreur utiliser précedament. 
+# Permet de corriger les erreurs de séquencage pour le forward et de déduire les vraies séquences grace aux ASV. Les reads identiques sont regroupés, puis le modele d'erreur errF permet de tester si une séquence rare (potentiellement erronée) résulte d'une erreur de séquencage. Si oui alors la séquence est fusionnée avec elle, sinon alors c'est une vraie variante. err=errF représent le modele d'erreur utilisé précédemment. 
 ```
-Le resultat pour forward donne le nombres de reads et le nombre de séquences uniques. L'echantillion 20 contient 4314 reads pour 897 séquences uniques. Les échantillons comportants beaucoup de reads on une proportion élever de sequences uniques puisque plus on sequences plus on revoit plusieurs fois les memes séquences. 
+Le résultat des forward donne le nombre de reads et le nombre de séquences uniques. L'échantillon 20 contient 4314 reads pour 897 séquences uniques. Les échantillons comportant beaucoup de reads ont une proportion de séquences uniques plus faibles, puisque les séquence sont davantage redondantes.
 
 
 
@@ -102,7 +102,7 @@ Le resultat pour forward donne le nombres de reads et le nombre de séquences un
 dadaRs <- dada(filtRs, err=errR, multithread=TRUE)
 # dada2 pour les reverse comme pour les forward
 ```
-Les résultats montrent le meme nombres de reads que le forward mais les le nombres de séquences uniques est diminuer. Cela peut etre expliquer par des sequences plus courte, donc moins de position ou des erreurs peuvent apparaitre.
+Les résultats montrent le meme nombre de reads que le forward mais le nombre de séquences uniques est diminué. Cela peut etre expliqué par des séquences plus courtes, donc moins de positions ou des erreurs peuvent apparaitre.
 
 
 ```{r}
@@ -110,72 +110,98 @@ dadaFs[[1]]
 # Cette ligne permet afficher les résultats de dada2 pour le premier échantillons en forward. 
 ```
 
-Il presente donc 128 sequences variables a partir de 1979 séquences uniques. Donc environ 90% des séquences uniques de départ presente des erreurs de séquencage, determinée grace a dada2. OMEGA_A est le seuil ou une séquences rarae est agrer comme variantes que si la propabbilité que se soit une erreur soit inféreiur a 1e-40, OMEGA_C effectue la meme choses. BAND_SIZE correspond a la largeur de la bande utilisé pour aligement. 
+Il présente donc 128 séquences variantes à partir de 1979 séquences uniques. Donc environ 90% des séquences uniques de départ présentent des erreurs de séquencage, determinées grace a dada2. OMEGA_A est le seuil ou une séquences rare est gardée comme variantes uniquement si la probabilité que ce soit une erreur est inférieure a 1e-40. OMEGA_C joue le meme role. BAND_SIZE correspond à la largeur de la bande utilisée pour l'aligement. 
 
 ```{r}
 
-# fusion des reads forward avec reverse pour reconstruire la séquences V4 de ARN 16S. Vérifie le chevauchement des séquences, verbose= TRUE sert a afficher les détail de la fusion.
+# Fusion des reads forward avec reverse pour reconstruire la séquence V4 de l'ARNr 16S. Vérifie le chevauchement des séquences, verbose= TRUE sert à afficher les détails de la fusion.
 mergers <- mergePairs(dadaFs, filtFs, dadaRs, filtRs, verbose=TRUE)
 
-# Les premier lignes sont afficher 
+# Les premières lignes sont affichées
 head(mergers[[1]])
 ```
-
+Un tableau est obtenu, le nmatch correspond au nombre de bases identique entre le forward et le reverse, nmismatch le nombre de différences, nindel le nombre de délétions ou d'insertions et accept vaut TRUE si la fusion est validée. La plupart des forward et reverse ne présentent pas de nmismatch. Le chevauchement de l'amplicon est total pour chaque lecture. 
 
 
 ```{r}
-seqtab <- makeSequenceTable(mergers)
+seqtab <- makeSequenceTable(mergers) # Tableau; une ligne par échantillons, une colonne par ASV, les cases correspondent au nombre de reads de la séquence dans l'échantillon. 
 dim(seqtab)
 ```
+Le tableau donne 20 lignes et 293 colonnes correspondant bien au 20 échantillons ou il y a les 293 séquences différentes après la fusion des reverse et des forward. Aucun échantillon n'a été perdu. 
+
 
 ```{r}
-# Inspect distribution of sequence lengths
+# Pour obtenir la longueur de chaque séquence du tableau, compte combien il y a d'ASV pour chaque longueur. 
 table(nchar(getSequences(seqtab)))
 ```
+Presque toutes les séquences ont des longueurs similaires entre 251 et 255. La variation de longueur peut etre obtenue à cause de variation de longueur de la séquence des bactéries. 
+
 
 ```{r}
+# L'objectif est de retirer les chimère du tableau d'ASV. method= "consensus" permet de juger sur l'ensemble des échantillons, repérer les chimères et les retirer. 
 seqtab.nochim <- removeBimeraDenovo(seqtab, method="consensus", multithread=TRUE, verbose=TRUE)
 dim(seqtab.nochim)
 ```
 
-```{r}
-sum(seqtab.nochim)/sum(seqtab)
-```
+Grace à ce resultat on obtient 232 ASV contre 293 précédemment donc 61 séquences ont été retirées étant identifiées comme des chimères. 
+
 
 ```{r}
-getN <- function(x) sum(getUniques(x))
-track <- cbind(out, sapply(dadaFs, getN), sapply(dadaRs, getN), sapply(mergers, getN), rowSums(seqtab.nochim))
-# If processing a single sample, remove the sapply calls: e.g. replace sapply(dadaFs, getN) with getN(dadaFs)
-colnames(track) <- c("input", "filtered", "denoisedF", "denoisedR", "merged", "nonchim")
-rownames(track) <- sample.names
+sum(seqtab.nochim)/sum(seqtab) # Calcule la proportion de reads conservés après le retrait des chimères. 
+```
+
+On retrouve donc 96% des reads apres le retrait des chimeres,ce qui signifie que la proportion de chimères représente 4% dans l'ensemble du jeu de données.
+
+```{r}
+getN <- function(x) sum(getUniques(x)) # compte le nombre total de reads 
+track <- cbind(out, sapply(dadaFs, getN), sapply(dadaRs, getN), sapply(mergers, getN), rowSums(seqtab.nochim)) # permet de construire un tableau de suivi 
+
+colnames(track) <- c("input", "filtered", "denoisedF", "denoisedR", "merged", "nonchim") # donne un nom au colonne
+rownames(track) <- sample.names # nomme les lignes avec les noms des échantillons
+
 head(track)
 ```
 
+Ce tableau permet de déterminer la ou il y a une perte de données et vérifier si le pipeline a bien fonctionné. Par exemple si on prend l'échantillon F3D144 on a 4827 reads au départ puis avec le premier filtrage on passe à 4312, le débruitage donne environ 4151, la fusion de 3646 et enfin le retrait des chimères 3507, représentant 72 % des reads de départ. La plus grosse perte se trouve à l'étapes de la fusion.  
+
 ```{r}
 taxa <- assignTaxonomy(seqtab.nochim, "~/ADM_dada2/silva_nr99_v138.2_toGenus_trainset.fa.gz", multithread=TRUE)
+
+# On attribue un nom de bactérie à chaque ASV, compare à une base de réference. 
 ```
 
 ```{r}
 taxa <- addSpecies(taxa, "~/ADM_dada2/silva_v138.2_assignSpecies.fa.gz")
+
+# Assignation à especes. Cherche une correspondance à 100% entre les ASV et la base de référence. 
 ```
 
 ```{r}
-taxa.print <- taxa # Removing sequence rownames for display only
-rownames(taxa.print) <- NULL
+taxa.print <- taxa # Copie de la taxonomie
+
+rownames(taxa.print) <- NULL 
 head(taxa.print)
 ```
+Donc les 6 premières ASV appatiennent au règne Bacteria, au phylum Bacteroidota, à la classe Bacteroidia et à l'ordre Bacteroidales. Pour la famille ce sont des Muribaculaceae ou Bacteroidaceae. Les NA correspondent au classifieur qui n'est pas sur du genre car il est mal décrit dans la base SILVA. Aucune n'a d'espèces donc il y a des NA à chaque lignes. 
 
 ```{r}
+# L'objectif est de d'isoler la ligne échantillons "Mock" du tableau sans chimière. 
+
 unqs.mock <- seqtab.nochim["Mock",]
-unqs.mock <- sort(unqs.mock[unqs.mock>0], decreasing=TRUE) # Drop ASVs absent in the Mock
+unqs.mock <- sort(unqs.mock[unqs.mock>0], decreasing=TRUE) 
+# enlever les ASV abscent du Mock
 cat("DADA2 inferred", length(unqs.mock), "sample sequences present in the Mock community.\n")
 ```
+Mock est une communauté dont on connait la composition. Le résultat donne 20 séquences donc le nombre extact attendu. Il n'y a donc aucune perte. 
+
 
 ```{r}
+# On met les séquences référence des 20 souches obtenues avec Mock 
 mock.ref <- getSequences(file.path(path, "HMP_MOCK.v35.fasta"))
-match.ref <- sum(sapply(names(unqs.mock), function(x) any(grepl(x, mock.ref))))
+match.ref <- sum(sapply(names(unqs.mock), function(x) any(grepl(x, mock.ref)))) # Pour chaque séquence, on compare les ASV dans Mock et cherche une similarité de 100 %
 cat("Of those,", sum(match.ref), "were exact matches to the expected reference sequences.\n")
 ```
+il y a  20 corespondances, elles correspondent parfaitement, il n'y a donc aucune erreur. 
 
 ```{r}
 install.packages("igraph", type = "source") 
@@ -205,54 +231,91 @@ library(ggplot2); packageVersion("ggplot2")
 ```
 
 ```{r}
-theme_set(theme_bw())
+theme_set(theme_bw()) # permet obtenir les graphique avec ggplot2
 ```
 
 ```{r}
+# Objetif est de crée un tableau avec les métadonnées. 
 samples.out <- rownames(seqtab.nochim)
-subject <- sapply(strsplit(samples.out, "D"), `[`, 1)
-gender <- substr(subject,1,1)
-subject <- substr(subject,2,999)
-day <- as.integer(sapply(strsplit(samples.out, "D"), `[`, 2))
+subject <- sapply(strsplit(samples.out, "D"), `[`, 1) # coupe au niveau de la lettre D 
+gender <- substr(subject,1,1)  # F female M males
+subject <- substr(subject,2,999) # Eleve la lettre grade que le numéro
+day <- as.integer(sapply(strsplit(samples.out, "D"), `[`, 2)) # Garde chiffre apres D donne numéro du jour 
 samdf <- data.frame(Subject=subject, Gender=gender, Day=day)
-samdf$When <- "Early"
-samdf$When[samdf$Day>100] <- "Late"
+samdf$When <- "Early" # Crée une colone When
+samdf$When[samdf$Day>100] <- "Late" # Plus de 100 jours passent en late 
 rownames(samdf) <- samples.out
 ```
 
 ```{r}
-ps <- phyloseq(otu_table(seqtab.nochim, taxa_are_rows=FALSE),
+# Contient les 3 tableaux construits précédemment, reliés par les noms des échantillons et les séquences ASV. 
+ps <- phyloseq(otu_table(seqtab.nochim,  taxa_are_rows=FALSE),
                sample_data(samdf),
                tax_table(taxa))
-ps <- prune_samples(sample_names(ps) != "Mock", ps) # Remove mock sample
+ps <- prune_samples(sample_names(ps) != "Mock", ps) 
+
+# Tableau d'abondance des OTU, échantillons en lignes, ASV en colonnes. samdf correspondent aux métadonnées. 
+
 ```
 
 ```{r}
+# L'objectif est de stocker les séquences ADN des ASV dans phyloseq.
 dna <- Biostrings::DNAStringSet(taxa_names(ps))
-names(dna) <- taxa_names(ps)
+names(dna) <- taxa_names(ps) # chaque séquence a son nom origine 
 ps <- merge_phyloseq(ps, dna)
-taxa_names(ps) <- paste0("ASV", seq(ntaxa(ps)))
+taxa_names(ps) <- paste0("ASV", seq(ntaxa(ps))) # Remplacer les noms par des noms comme ASV1, ASV2..
 ps
 ```
 
-```{r}
-plot_richness(ps, x="Day", measures=c("Shannon", "Simpson"), color="When")
-```
+Le nombre de séquences est identique aux nombrse de taxa, il n'y a pas de perte et cela corrèle. 
 
 ```{r}
-# Transform data to proportions as appropriate for Bray-Curtis distances
+# Graphique de la diversité alpha de chaque échantillon
+plot_richness(ps, x="Day", measures=c("Shannon", "Simpson"), color="When") # mesure Shannon et simpson 
+```
+Indice de Shannon augmente en fonction du nombre d'ASV. L'indice de Simpson mesure la probabilité que 2 reads tirée au hasard viennent de deux ASV différentes (0 à 1). 
+
+Chaque point correspond à un échantillon, séparés en deux groupes Early et Late. Pour Shannon les échantillons Early ont une diversité alpha d'environ 3 à 4 et avec une grande dispersion. Les Early sont regroupés autour de 3 à 3,65. 
+Pour l'indice de Simpson les valeurs sont entre 0,92 et 0,97. Les Late sont réparties entre 0,93 et 0,96. Il y a donc une légère différence entre les Late et les Early, Late ont un indice de diversité alpha plus faible et une plus faible répartition. Il est possible que la composition des communautés soit différente, cependant l'indice alpha ne peut pas l'affirmer. 
+
+
+```{r}
+# On convertit les comptes en proportions, chaque échantillon a un total de 1, sinon ils ne sont pas comparables car le  nombre de reads est différent. 
 ps.prop <- transform_sample_counts(ps, function(otu) otu/sum(otu))
 ord.nmds.bray <- ordinate(ps.prop, method="NMDS", distance="bray")
+
+# Calcule la distance entre echantillon, 1 rien de commun, 0 communautés identiques. Avec la distance Bray-Curtis.
 ```
+Le stress est de 0,08, il y a eu plusieurs tests avant de tomber sur la meilleure carte.
 
 ```{r}
+# carte NMDS 
 plot_ordination(ps.prop, ord.nmds.bray, color="When", title="Bray NMDS")
 ```
+Le graphique permet de voir une séparation entre les Late et les Early. Tout les Late sont vers NMDS2 à gauche et un NMDS1 négatif. Les Early sont du coté droit vers un NMDS1 positif. Cela induit à une différence entre les deux communautés bactériennes entre le début et la fin. Donc les souris jeunes et agées n'ont pas les memes communautés bactériennes. Les communautés de Early sont plus dispersées, alors que les communautés Late sont moins dispersés. 
+
 
 ```{r}
-top20 <- names(sort(taxa_sums(ps), decreasing=TRUE))[1:20]
-ps.top20 <- transform_sample_counts(ps, function(OTU) OTU/sum(OTU))
-ps.top20 <- prune_taxa(top20, ps.top20)
-plot_bar(ps.top20, x="Day", fill="Family") + facet_wrap(~When, scales="free_x")
+top20 <- names(sort(taxa_sums(ps), decreasing=TRUE))[1:20]# les 20 ASV les plus abondantes
+ps.top20 <- transform_sample_counts(ps, function(OTU) OTU/sum(OTU)) # convertie en proportion, reste les ASV moins abondantes. 
+ps.top20 <- prune_taxa(top20, ps.top20) 
+plot_bar(ps.top20, x="Day", fill="Family") + facet_wrap(~When, scales="free_x") # Barres empilées 1 barre correspond a un échantillon, les ASV sont séparer entre Late et Early.  
 ```
+Les 20 ASV les plus abondantes présentent environ pour Early entre 60 et 80 % des reads de chaque échantillon, elles dominent bien les communautés. La famille la plus abondante est Muribaculaceae. La différence entre les Early et les Late est visible. Les Early sont plus variables d'une souris à l'autre, notamment les Bacteroidaceae et les Lachnospiraceae sont variables. En comparaison ces famille chez les Late sont plus stable. Les communautés de Late se ressemblent alors que les Early sont dispersées et n'ont pas la meme composition. La communautées bactériennes des souries dépends donc de l'age de celle-ci. 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
