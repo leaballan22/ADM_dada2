@@ -20,11 +20,8 @@ BiocManager::install("dada2", version = "3.23")
     ## Installation paths not writeable, unable to update packages
     ##   path: /usr/local/lib/R/library
     ##   packages:
-    ##     class, cluster, foreign, KernSmooth, lattice, MASS, Matrix, nlme, nnet,
-    ##     spatial, survival
-
-    ## Old packages: 'arrow', 'curl', 'duckdb', 'gargle', 'gert', 'googledrive',
-    ##   'googlesheets4', 'lambda.r', 'RcppArmadillo', 'readxl', 'sp', 'xfun'
+    ##     class, cluster, foreign, KernSmooth, lattice, MASS, Matrix, mgcv, nlme,
+    ##     nnet, spatial, survival
 
 ``` r
 library(dada2); packageVersion("dada2")
@@ -420,6 +417,18 @@ head(track)
     ## F3D143  3178     2941      2822      2868   2553    2519
     ## F3D144  4827     4312      4151      4228   3646    3507
 
+``` r
+nrow(out); length(sample.names); length(fnFs); length(filtFs)
+```
+
+    ## [1] 20
+
+    ## [1] 20
+
+    ## [1] 20
+
+    ## [1] 20
+
 Ce tableau permet de déterminer la ou il y a une perte de données et
 vérifier si le pipeline a bien fonctionné. Par exemple si on prend
 l’échantillon F3D144 on a 4827 reads au départ puis avec le premier
@@ -536,11 +545,8 @@ BiocManager::install("phyloseq")
     ## Installation paths not writeable, unable to update packages
     ##   path: /usr/local/lib/R/library
     ##   packages:
-    ##     class, cluster, foreign, KernSmooth, lattice, MASS, Matrix, nlme, nnet,
-    ##     spatial, survival
-
-    ## Old packages: 'arrow', 'curl', 'duckdb', 'gargle', 'gert', 'googledrive',
-    ##   'googlesheets4', 'lambda.r', 'RcppArmadillo', 'readxl', 'sp', 'xfun'
+    ##     class, cluster, foreign, KernSmooth, lattice, MASS, Matrix, mgcv, nlme,
+    ##     nnet, spatial, survival
 
 ``` r
 library(phyloseq); packageVersion("phyloseq")
@@ -621,7 +627,7 @@ library(Biostrings); packageVersion("Biostrings")
 library(ggplot2); packageVersion("ggplot2")
 ```
 
-    ## [1] '4.0.3'
+    ## [1] '4.0.4'
 
 ``` r
 theme_set(theme_bw()) # Permet obtenir les graphique avec ggplot2
@@ -689,7 +695,7 @@ plot_richness(ps, x="Day", measures=c("Shannon", "Simpson"), color="When") # Mes
     ## Call `lifecycle::last_lifecycle_warnings()` to see where this warning was
     ## generated.
 
-![](ADM_demo_files/figure-gfm/unnamed-chunk-36-1.png)<!-- --> Indice de
+![](ADM_demo_files/figure-gfm/unnamed-chunk-37-1.png)<!-- --> Indice de
 Shannon augmente en fonction du nombre d’ASV. L’indice de Simpson mesure
 la probabilité que 2 reads tirée au hasard viennent de deux ASV
 différentes (0 à 1).
@@ -711,40 +717,43 @@ ord.nmds.bray <- ordinate(ps.prop, method="NMDS", distance="bray")
 ```
 
     ## Run 0 stress 0.08043117 
-    ## Run 1 stress 0.09477197 
-    ## Run 2 stress 0.08076337 
-    ## ... Procrustes: rmse 0.01048784  max resid 0.03227541 
-    ## Run 3 stress 0.08616061 
-    ## Run 4 stress 0.1332862 
-    ## Run 5 stress 0.08076337 
-    ## ... Procrustes: rmse 0.01051081  max resid 0.03234992 
-    ## Run 6 stress 0.08076338 
-    ## ... Procrustes: rmse 0.01054088  max resid 0.03244803 
-    ## Run 7 stress 0.08076341 
-    ## ... Procrustes: rmse 0.01057887  max resid 0.0325718 
-    ## Run 8 stress 0.08076345 
-    ## ... Procrustes: rmse 0.01061631  max resid 0.03269414 
-    ## Run 9 stress 0.08043117 
-    ## ... New best solution
-    ## ... Procrustes: rmse 4.560597e-06  max resid 1.148301e-05 
+    ## Run 1 stress 0.08043117 
+    ## ... Procrustes: rmse 7.57163e-07  max resid 1.566192e-06 
     ## ... Similar to previous best
-    ## Run 10 stress 0.09477211 
-    ## Run 11 stress 0.1326154 
-    ## Run 12 stress 0.09477204 
-    ## Run 13 stress 0.08076338 
-    ## ... Procrustes: rmse 0.01052411  max resid 0.03239092 
-    ## Run 14 stress 0.08076337 
-    ## ... Procrustes: rmse 0.01048558  max resid 0.03226418 
+    ## Run 2 stress 0.09477206 
+    ## Run 3 stress 0.0807634 
+    ## ... Procrustes: rmse 0.01056453  max resid 0.03252503 
+    ## Run 4 stress 0.09477205 
+    ## Run 5 stress 0.08616061 
+    ## Run 6 stress 0.08616061 
+    ## Run 7 stress 0.1432872 
+    ## Run 8 stress 0.08076336 
+    ## ... Procrustes: rmse 0.01044073  max resid 0.03212112 
+    ## Run 9 stress 0.08043117 
+    ## ... Procrustes: rmse 3.110017e-06  max resid 9.656907e-06 
+    ## ... Similar to previous best
+    ## Run 10 stress 0.08076337 
+    ## ... Procrustes: rmse 0.01050172  max resid 0.03232031 
+    ## Run 11 stress 0.08043117 
+    ## ... Procrustes: rmse 2.568916e-06  max resid 7.02413e-06 
+    ## ... Similar to previous best
+    ## Run 12 stress 0.08076339 
+    ## ... Procrustes: rmse 0.01055263  max resid 0.03248639 
+    ## Run 13 stress 0.08043117 
+    ## ... Procrustes: rmse 2.276777e-06  max resid 6.992336e-06 
+    ## ... Similar to previous best
+    ## Run 14 stress 0.08616061 
     ## Run 15 stress 0.08616061 
-    ## Run 16 stress 0.08616061 
+    ## Run 16 stress 0.08076342 
+    ## ... Procrustes: rmse 0.0105825  max resid 0.0325837 
     ## Run 17 stress 0.08076337 
-    ## ... Procrustes: rmse 0.01050444  max resid 0.03232628 
-    ## Run 18 stress 0.08076341 
-    ## ... Procrustes: rmse 0.01057205  max resid 0.03254679 
-    ## Run 19 stress 0.08076337 
-    ## ... Procrustes: rmse 0.01051224  max resid 0.03235197 
-    ## Run 20 stress 0.08616061 
-    ## *** Best solution repeated 1 times
+    ## ... Procrustes: rmse 0.01052045  max resid 0.03238174 
+    ## Run 18 stress 0.09477198 
+    ## Run 19 stress 0.09477203 
+    ## Run 20 stress 0.08043117 
+    ## ... Procrustes: rmse 1.641984e-06  max resid 3.4322e-06 
+    ## ... Similar to previous best
+    ## *** Best solution repeated 5 times
 
 ``` r
 # Calcule la distance entre echantillon, 1 rien de commun, 0 communautés identiques. Avec la distance Bray-Curtis.
@@ -758,7 +767,7 @@ meilleure carte.
 plot_ordination(ps.prop, ord.nmds.bray, color="When", title="Bray NMDS")
 ```
 
-![](ADM_demo_files/figure-gfm/unnamed-chunk-38-1.png)<!-- --> Le
+![](ADM_demo_files/figure-gfm/unnamed-chunk-39-1.png)<!-- --> Le
 graphique permet de voir une séparation entre les Late et les Early.
 Tous les Late sont vers NMDS2 à gauche et un NMDS1 négatif. Les Early
 sont du coté droit vers un NMDS1 positif. Cela induit à une différence
@@ -774,7 +783,7 @@ ps.top20 <- prune_taxa(top20, ps.top20)
 plot_bar(ps.top20, x="Day", fill="Family") + facet_wrap(~When, scales="free_x") # Barres empilées 1 barre correspond a un échantillon, les ASV sont séparer entre Late et Early.  
 ```
 
-![](ADM_demo_files/figure-gfm/unnamed-chunk-39-1.png)<!-- --> Les 20 ASV
+![](ADM_demo_files/figure-gfm/unnamed-chunk-40-1.png)<!-- --> Les 20 ASV
 les plus abondantes présentent environ pour Early entre 60 et 80 % des
 reads de chaque échantillon, elles dominent bien les communautés. La
 famille la plus abondante est Muribaculaceae. La différence entre les

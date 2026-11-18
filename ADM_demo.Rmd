@@ -49,6 +49,7 @@ filtRs <- file.path(path, "filtered", paste0(sample.names, "_R_filt.fastq.gz"))
 
 names(filtFs) <- sample.names # Replace les elements du vecteur par les nouveaux noms des échantillons. 
 names(filtRs) <- sample.names # Pareil pour les reverse.
+
 ```
 
 Cette commande prépare les chemins ou la fonction filterAndTrim va ajouter les fichiers qui sont nettoyés. 
@@ -154,6 +155,7 @@ sum(seqtab.nochim)/sum(seqtab) # Calcule la proportion de reads conservés aprè
 On retrouve donc 96% des reads apres le retrait des chimeres,ce qui signifie que la proportion de chimères représente 4% dans l'ensemble du jeu de données.
 
 ```{r}
+
 getN <- function(x) sum(getUniques(x)) # Compte le nombre total de reads 
 track <- cbind(out, sapply(dadaFs, getN), sapply(dadaRs, getN), sapply(mergers, getN), rowSums(seqtab.nochim)) # Permet de construire un tableau de suivi 
 
@@ -162,6 +164,11 @@ rownames(track) <- sample.names # Nomme les lignes avec les noms des échantillo
 
 head(track)
 ```
+
+```{r}
+nrow(out); length(sample.names); length(fnFs); length(filtFs)
+```
+
 
 Ce tableau permet de déterminer la ou il y a une perte de données et vérifier si le pipeline a bien fonctionné. Par exemple si on prend l'échantillon F3D144 on a 4827 reads au départ puis avec le premier filtrage on passe à 4312, le débruitage donne environ 4151, la fusion de 3646 et enfin le retrait des chimères 3507, représentant 73 % des reads de départ. La plus grosse perte se trouve à l'étapes de la fusion et du filtrage.  
 
